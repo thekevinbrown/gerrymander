@@ -1,23 +1,29 @@
 import React, { useEffect } from 'react';
 import { DragSourceMonitor, useDrag } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
+import { useRecoilValue } from 'recoil';
+import { BLINK_SIZE, cssCoordinatesFromCenter, Point } from '../../utils/geometry';
 
-import { BlinkState } from '../../blink-state';
+import { blinksState } from '../../utils/state';
+import { Hexagon } from '../hexagon';
 
-function getStyles(left: number, top: number, isDragging: boolean): React.CSSProperties {
-	const transform = `translate3d(${left}px, ${top}px, 0)`;
+function getStyles(center: Point, isDragging: boolean): React.CSSProperties {
+	const { left, top } = cssCoordinatesFromCenter(center);
+
 	return {
 		position: 'absolute',
-		transform,
-		WebkitTransform: transform,
-		// IE fallback: hide the real node using CSS when dragging
-		// because IE will ignore our custom "empty image" drag preview.
+		left,
+		top,
+		width: BLINK_SIZE,
+		height: BLINK_SIZE,
+
+		// Hide ourselves while dragging, as that's drag layer's job.
 		opacity: isDragging ? 0 : 1,
-		height: isDragging ? 0 : '',
 	};
 }
 
-export const Blink = ({ id, left, top }: BlinkState) => {
+export const Blink = ({ id }: { id: number }) => {
+	const blink = useRecoilValue(blinksState)[id];
 	const [{ isDragging }, drag, preview] = useDrag({
 		item: { type: 'blink', id },
 		collect: (monitor: DragSourceMonitor) => ({
@@ -30,14 +36,8 @@ export const Blink = ({ id, left, top }: BlinkState) => {
 	}, [preview]);
 
 	return (
-		<div ref={drag} style={getStyles(left, top, isDragging)}>
-			<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
-				<path
-					stroke="none"
-					fill="black"
-					d="M59 2.8867513459481a10 10 0 0 1 10 0l45.425625842204 26.226497308104a10 10 0 0 1 5 8.6602540378444l0 52.452994616207a10 10 0 0 1 -5 8.6602540378444l-45.425625842204 26.226497308104a10 10 0 0 1 -10 0l-45.425625842204 -26.226497308104a10 10 0 0 1 -5 -8.6602540378444l0 -52.452994616207a10 10 0 0 1 5 -8.6602540378444"
-				></path>
-			</svg>
+		<div ref={drag} style={getStyles(blink.center, isDragging)}>
+			<Hexagon />
 			<div
 				style={{
 					position: 'absolute',

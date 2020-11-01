@@ -1,44 +1,73 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
-import { useRecoilState } from 'recoil';
-import { blinksState } from '../../state';
+import { useDrop, XYCoord } from 'react-dnd';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { doSnapToOtherBlinks } from '../../utils/geometry';
+import {
+	blinksConnections,
+	blinksState,
+	BlinkState,
+	debug,
+	draggingBlinks,
+} from '../../utils/state';
 
 import { Blink } from '../blink';
 import { BlinkDragLayer } from '../blink-drag-layer';
+import { ConnectionsDebugLayer } from '../connections-debug-layer';
+import { SnapDebugLayer } from '../snap-debug-layer';
+
 import './styles.css';
 
 export const Board = () => {
 	const [blinks, setBlinks] = useRecoilState(blinksState);
+	const debugEnabled = useRecoilValue(debug);
 
 	const [, drop] = useDrop({
-		accept: 'blink',
-		drop(item: { type: 'blink'; id: number }, monitor) {
-			const delta = monitor.getDifferenceFromInitialOffset() as {
-				x: number;
-				y: number;
-			};
-			const blinkState = blinks[item.id];
+		accept: ['blink', 'new-blink'],
+		drop(item: { type: 'blink' | 'new-blink'; id: number }, monitor) {
+			if (item.type === 'new-blink') {
+				// Create a new blink where they dropped.
+				const center = monitor.getClientOffset() as XYCoord;
+				const copy = [...blinks, BlinkState.from({ id: item.id, center })];
 
-			let left = Math.round(blinkState.left + delta.x);
-			let top = Math.round(blinkState.top + delta.y);
-			// if (snapToGrid) {
-			// 	[left, top] = doSnapToGrid(left, top);
-			// }
+				setBlinks(copy);
+			} else if (item.type === 'blink') {
+				// Move an existing blink
+				const delta = monitor.getDifferenceFromInitialOffset() as XYCoord;
+				const blinkState = blinks[item.id];
 
-			const copy = [...blinks];
-			copy[blinkState.id] = { ...blinkState, left, top };
-			setBlinks(copy);
+				let x = blinkState.center.x + delta.x;
+				let y = blinkState.center.y + delta.y;
 
+				({ x, y } = doSnapToOtherBlinks({ id: item.id, x, y, blinks }));
+
+				const copy = [...blinks];
+				copy[blinkState.id] = BlinkState.from({
+					id: blinkState.id,
+					center: { x, y },
+				});
+				setBlinks(copy);
+			}
 			return undefined;
 		},
 	});
 
 	return (
 		<div ref={drop} className="fill">
+			{/* Once the blinks settle, this is how they're shown. */}
 			{blinks.map((blinkState) => (
 				<Blink {...blinkState} />
 			))}
+
+			{/* Shows the blinks while they drag, custom drag layer */}
 			<BlinkDragLayer />
+
+			{/* Debugging tools */}
+			{debugEnabled && (
+				<>
+					<SnapDebugLayer />
+					<ConnectionsDebugLayer />
+				</>
+			)}
 		</div>
 	);
 };
