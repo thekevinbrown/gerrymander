@@ -1,14 +1,8 @@
 import React from 'react';
 import { useDrop, XYCoord } from 'react-dnd';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { doSnapToOtherBlinks } from '../../utils/geometry';
-import {
-	blinksConnections,
-	blinksState,
-	BlinkState,
-	debug,
-	draggingBlinks,
-} from '../../utils/state';
+import { blinksConnections, blinksState, BlinkState, debug } from '../../utils/state';
 
 import { Blink } from '../blink';
 import { BlinkDragLayer } from '../blink-drag-layer';
@@ -80,7 +74,7 @@ export const Board = () => {
 		<div ref={drop} className="fill">
 			{/* Once the blinks settle, this is how they're shown. */}
 			{blinks.map((blinkState) => (
-				<Blink {...blinkState} />
+				<Blink key={blinkState.id} {...blinkState} />
 			))}
 
 			{/* Shows the blinks while they drag, custom drag layer */}

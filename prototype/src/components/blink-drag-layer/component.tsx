@@ -35,7 +35,9 @@ export const BlinkDragLayer = () => {
 	if (item.type === 'blink') {
 		const visit = (blink: BlinkState) => {
 			visited.add(blink.id);
-			previews.push(<BlinkDragPreview center={blink.center} delta={delta} id={blink.id} />);
+			previews.push(
+				<BlinkDragPreview key={blink.id} center={blink.center} delta={delta} id={blink.id} />
+			);
 			for (const connection of Object.values(connections[blink.id])) {
 				if (!visited.has(connection.id)) visit(connection);
 			}
@@ -44,7 +46,7 @@ export const BlinkDragLayer = () => {
 		visit(blinks[item.id]);
 	} else if (item.type === 'new-blink') {
 		// New blinks are always just a single preview.
-		previews.push(<BlinkDragPreview center={initial} delta={delta} />);
+		previews.push(<BlinkDragPreview key={item.id} center={initial} delta={delta} />);
 	}
 
 	// At this point our previews are ready.

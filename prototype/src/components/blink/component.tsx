@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DragSourceMonitor, useDrag } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { useRecoilValue } from 'recoil';
+import { HSB } from '../../utils/colors';
 import { BLINK_SIZE, cssCoordinatesFromCenter, Point } from '../../utils/geometry';
 
 import { blinksConnections, blinksState, BlinkState } from '../../utils/state';
 import { Hexagon } from '../hexagon';
+import { Leds } from '../leds';
 
 function getStyles(center: Point, isDragging: boolean): React.CSSProperties {
 	const { left, top } = cssCoordinatesFromCenter(center);
@@ -26,6 +28,14 @@ export const Blink = ({ id }: { id: number }) => {
 	const blinks = useRecoilValue(blinksState);
 	const connections = useRecoilValue(blinksConnections);
 	const blink = blinks[id];
+	const [leds, setLeds] = useState([
+		new HSB(),
+		new HSB(),
+		new HSB(),
+		new HSB(),
+		new HSB(),
+		new HSB(),
+	]);
 
 	const [{ isDragging }, drag, preview] = useDrag({
 		item: { type: 'blink', id },
@@ -53,23 +63,29 @@ export const Blink = ({ id }: { id: number }) => {
 		preview(getEmptyImage(), { captureDraggingState: true });
 	}, [preview]);
 
+	const rotateColor = () => {
+		console.log('Rotating!');
+		const [current] = leds;
+
+		const h = (current.h + 45) % 361;
+		const s = 100;
+		const b = 50;
+
+		console.log(new HSB(h, s, b).color);
+		setLeds([
+			new HSB(h, s, b),
+			new HSB(h, s, b),
+			new HSB(h, s, b),
+			new HSB(h, s, b),
+			new HSB(h, s, b),
+			new HSB(h, s, b),
+		]);
+	};
+
 	return (
-		<div ref={drag} style={getStyles(blink.center, isDragging)}>
+		<div ref={drag} style={getStyles(blink.center, isDragging)} onClick={rotateColor}>
 			<Hexagon />
-			<div
-				style={{
-					position: 'absolute',
-					top: 0,
-					left: 0,
-					right: 0,
-					bottom: 0,
-					display: 'flex',
-					justifyContent: 'center',
-					alignItems: 'center',
-				}}
-			>
-				<span style={{ color: 'white' }}>{id}</span>
-			</div>
+			<Leds leds={leds} />
 		</div>
 	);
 };

@@ -48,8 +48,3 @@ export const blinksConnections = selector({
 		return allBlinks.map((blink) => connectionsForBlink(blink, allBlinks));
 	},
 });
-
-export const draggingBlinks = atom({
-	key: 'draggingBlinks',
-	default: new Set<number>(),
-});

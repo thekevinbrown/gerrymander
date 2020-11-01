@@ -3,7 +3,7 @@ import { BlinkState } from './state';
 export const BLINK_SIZE = 128;
 const FACE_PADDING = -7;
 const HEX_ANGLE_SEGMENT = Math.PI / 3;
-const FACE_ANGLES = [
+export const FACE_ANGLES = [
 	0,
 	HEX_ANGLE_SEGMENT,
 	HEX_ANGLE_SEGMENT * 2,
@@ -61,7 +61,7 @@ export const doSnapToOtherBlinks = ({
 	blinks: BlinkState[];
 }) => {
 	// If there are no other blinks to snap to, simply return what we got.
-	if (blinks.length === 0) return center;
+	if (blinks.length === 0 || (blinks.length === 1 && blinks[0].id === id)) return center;
 
 	// Find the closest blink.
 	let closest: { id: number; distance: number } | undefined = undefined;
