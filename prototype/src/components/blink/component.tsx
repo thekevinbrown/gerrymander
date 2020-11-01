@@ -4,7 +4,7 @@ import { getEmptyImage } from 'react-dnd-html5-backend';
 import { useRecoilValue } from 'recoil';
 import { BLINK_SIZE, cssCoordinatesFromCenter, Point } from '../../utils/geometry';
 
-import { blinksState } from '../../utils/state';
+import { blinksConnections, blinksState, BlinkState } from '../../utils/state';
 import { Hexagon } from '../hexagon';
 
 function getStyles(center: Point, isDragging: boolean): React.CSSProperties {
@@ -23,12 +23,30 @@ function getStyles(center: Point, isDragging: boolean): React.CSSProperties {
 }
 
 export const Blink = ({ id }: { id: number }) => {
-	const blink = useRecoilValue(blinksState)[id];
+	const blinks = useRecoilValue(blinksState);
+	const connections = useRecoilValue(blinksConnections);
+	const blink = blinks[id];
+
 	const [{ isDragging }, drag, preview] = useDrag({
 		item: { type: 'blink', id },
 		collect: (monitor: DragSourceMonitor) => ({
 			isDragging: monitor.isDragging(),
 		}),
+		isDragging: (monitor: DragSourceMonitor) => {
+			// We're dragging if us or any of our connected blinks are
+			// dragging.
+			const visited = new Set<number>();
+			const visit = (blink: BlinkState) => {
+				visited.add(blink.id);
+				for (const connection of Object.values(connections[blink.id])) {
+					if (!visited.has(connection.id)) visit(connection);
+				}
+			};
+			visit(blink);
+
+			// And we're dragging if we're connected to the thing that's dragging.
+			return visited.has(monitor.getItem().id);
+		},
 	});
 
 	useEffect(() => {

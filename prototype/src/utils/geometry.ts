@@ -53,33 +53,29 @@ export const cssCoordinatesFromCenter = (center: Point) => ({
 
 export const doSnapToOtherBlinks = ({
 	id,
-	x,
-	y,
+	center,
 	blinks,
 }: {
 	id: number;
-	x: number;
-	y: number;
+	center: Point;
 	blinks: BlinkState[];
 }) => {
-	// No snap needed if there's only one blink in the pile.
-	if (blinks.length <= 1) return { x, y };
-
-	const current = blinks[id];
+	// If there are no other blinks to snap to, simply return what we got.
+	if (blinks.length === 0) return center;
 
 	// Find the closest blink.
 	let closest: { id: number; distance: number } | undefined = undefined;
-	for (const blink of blinks) {
+	for (const otherBlink of blinks) {
 		// Skip ourselves
-		if (blink.id === current.id) continue;
+		if (otherBlink.id === id) continue;
 
 		// Otherwise compute the distance
-		const distance = distanceBetween({ x, y }, blink.center);
+		const distance = distanceBetween(center, otherBlink.center);
 
 		// And if we're closer than the current closest, save.
 		if (!closest || closest.distance > distance) {
 			closest = {
-				id: blink.id,
+				id: otherBlink.id,
 				distance,
 			};
 		}
@@ -87,16 +83,15 @@ export const doSnapToOtherBlinks = ({
 
 	if (!closest) throw new Error('Could not find closest blink');
 
-	// Optimisation so we don't have to keep recomputing this in the inner loop.
 	const otherBlink = blinks[closest.id];
 
 	// Ok, are we close enough to snap?
 	// Which faces would snap (if any)?
-	const currentSnapFaceId = closestFaceForConnection({ x, y }, otherBlink.center);
+	const currentSnapFaceId = closestFaceForConnection(center, otherBlink.center);
 	// Which means their snap face would be the inverse.
 	const otherSnapFaceId = (currentSnapFaceId + 3) % 6;
 
-	const currentSnapFaceCoordinate = faceFromCenter({ x, y }, currentSnapFaceId);
+	const currentSnapFaceCoordinate = faceFromCenter(center, currentSnapFaceId);
 	const otherSnapFaceCoordinate = faceFromCenter(otherBlink.center, otherSnapFaceId);
 
 	if (distanceBetween(currentSnapFaceCoordinate, otherSnapFaceCoordinate) <= SNAP_TOLERANCE) {
@@ -105,7 +100,7 @@ export const doSnapToOtherBlinks = ({
 		return centerFromFace(otherSnapFaceCoordinate, currentSnapFaceId);
 	} else {
 		// If we're here, we didn't snap. Return the coordinates unbothered.
-		return { x, y };
+		return center;
 	}
 };
 
